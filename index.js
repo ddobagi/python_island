@@ -10,10 +10,13 @@ const PORT = process.env.PORT
 app.use(cors());
 app.use(bodyParser.json());
 
-app.get('/run-python', (req, res) => {
+app.get('/run-python/:slug', (req, res) => {
+  const slug = req.params.slug
   // script.py 실행
-  exec('python script.py', (error, stdout, stderr) => {
+  exec(`python script.py ${slug}`, (error, stdout, stderr) => {
 // 이유는 모르겠으나, python3이 아닌 python으로 해야 정상적으로 실행됨 
+// exec 호출 시 python script.py slug 형식으로 실행하도록 설정.
+// 형식을 이와 같이 설정함으로써, script.py에서 sys.argv[1]로 slug 값을 알 수 있음
     if (error) {
       console.error(`Error: ${error.message}`);
       return res.status(500).json({ error: 'Python script execution error' });
