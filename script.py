@@ -1,7 +1,7 @@
 import sys
 
 # Stability scores dictionary
-scores = {"nvidia": 95, "walmart": 55, "visa": 85}
+scores = {"nvidia": 95, "wm": 55, "visa": 85}
 
 # Get slug from command-line arguments
 if len(sys.argv) > 1:
