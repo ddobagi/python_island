@@ -52,11 +52,18 @@ const cacheFile = './sheets_cache.json';
 /* --- Google Sheets 데이터 가져오기 --- */
 // Google Sheets API를 호출하는 함수 //
 async function fetchGoogleSheetData() {
+  try {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range,
   });
+  console.log("Google Sheets API Response:", response.data); // ✅ 응답 데이터 로깅
   return response.data.values;
+}
+  catch (error) {
+    console.error("Error fetching data from Google Sheets:", error); // ✅ 에러 상세 출력
+    throw new Error(`Google Sheets API error: ${error.response?.status || error.message}`);
+  }
 }
 
 /* --- 캐시 저장 및 로드 --- */
