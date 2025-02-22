@@ -7,16 +7,16 @@ const { google } = require('googleapis');
 const moment = require('moment');
 
 const app = express();
-const PORT = process.env.PORT; // 네트워크 환경 내 PORT 사용
+const PORT = process.env.PORT || 5000; // 환경 변수 또는 기본값 사용
 
 app.use(cors());
 app.use(bodyParser.json());
 
-/* ------------------- 기존 Python 실행 엔드포인트 유지 ------------------- */
+/* ------------------- Python 스크립트 실행 엔드포인트 ------------------- */
 app.get('/run-python/:slug', (req, res) => {
   const slug = req.params.slug;
 
-  // script.py 실행
+  // Python 스크립트 실행
   exec(`python script.py ${slug}`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error: ${error.message}`);
@@ -32,9 +32,9 @@ app.get('/run-python/:slug', (req, res) => {
   });
 });
 
-/* ------------------- Google Sheets API + 캐시 기능 추가 ------------------- */
+/* ------------------- Google Sheets API + 캐시 ------------------- */
 
-// Google Sheets API 인증 설정
+// Google Sheets API 인증
 const auth = new google.auth.GoogleAuth({
   keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, // 구글 API 인증 파일 경로
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
@@ -43,14 +43,13 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 
 // Google Sheets 정보
-const spreadsheetId = '1cwsuVehsWlSwF-s-fv5MLqZv9hIl5IbLyzk3RROMDj4'; // 구글 시트 ID
-const range = 'Sheet1!A1:C100'; // 읽어올 범위
+const spreadsheetId = '1cwsuVehsWlSwF-s-fv5MLqZv9hIl5IbLyzk3RROMDj4'; // 스프레드시트 ID
+const range = 'Sheet1!A1:C100'; // 데이터 범위
 
 // 캐시 파일 경로
 const cacheFile = './sheets_cache.json';
-const cacheExpiryMinutes = 60 * 6; // 캐시 만료 시간 (6시간)
 
-// Google Sheets 데이터 가져오기
+/* --- Google Sheets 데이터 가져오기 --- */
 async function fetchGoogleSheetData() {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -59,7 +58,7 @@ async function fetchGoogleSheetData() {
   return response.data.values;
 }
 
-// 캐시 저장 (데이터 + 타임스탬프)
+/* --- 캐시 저장 및 로드 --- */
 function saveCache(data) {
   const cacheData = {
     timestamp: moment().toISOString(),
@@ -68,7 +67,6 @@ function saveCache(data) {
   fs.writeFileSync(cacheFile, JSON.stringify(cacheData, null, 2));
 }
 
-// 캐시 로드
 function loadCache() {
   if (fs.existsSync(cacheFile)) {
     const cachedData = JSON.parse(fs.readFileSync(cacheFile));
@@ -77,52 +75,73 @@ function loadCache() {
   return null;
 }
 
-// 캐시 유효성 검사
-function isCacheValid(timestamp) {
-  const cacheTime = moment(timestamp);
-  const now = moment();
-  const diffMinutes = now.diff(cacheTime, 'minutes');
-  return diffMinutes < cacheExpiryMinutes;
-}
+/* ------------------- API 엔드포인트 ------------------- */
 
-// API 엔드포인트: Google Sheets 데이터 요청
-app.get('/data', async (req, res) => {
-  const refresh = req.query.refresh === 'true'; // /data?refresh=true 로 새로고침 요청
+/* ✅ 캐시된 Google Sheets 데이터 제공 */
+app.get('/google-sheets/:slug', (req, res) => {
+  const slug = req.params.slug;
 
   try {
-    let data;
-    let source;
-
     const cachedData = loadCache();
 
-    if (refresh || !cachedData || !isCacheValid(cachedData.timestamp)) {
-      // 새로고침 요청이거나 캐시가 없거나 만료된 경우
-      console.log('Google Sheets에서 데이터 불러오는 중...');
-      data = await fetchGoogleSheetData();
-
-      // 캐시 저장
-      saveCache(data);
-      source = 'Google Sheets';
-    } else {
-      // 유효한 캐시 사용
-      console.log('캐시된 데이터를 사용 중...');
-      data = cachedData.data;
-      source = 'Cache';
+    if (!cachedData) {
+      return res.status(404).json({ error: "No cached data available." });
     }
 
-    // 분석 로직 제거 후, 원본 데이터만 반환
-    res.json({
-      source,
-      lastUpdated: cachedData ? cachedData.timestamp : moment().toISOString(),
-      data,
-    });
+    const data = cachedData.data;
+
+    // 헤더 파싱 및 슬러그 필터링
+    const headers = data[0];
+    const slugIndex = headers.indexOf("Slug");
+    const nameIndex = headers.indexOf("Name");
+    const contentIndex = headers.indexOf("Content");
+
+    const matchedRow = data.find((row, index) => index !== 0 && row[slugIndex] === slug);
+
+    if (matchedRow) {
+      res.json({
+        slug: matchedRow[slugIndex],
+        name: matchedRow[nameIndex],
+        content: matchedRow[contentIndex],
+      });
+    } else {
+      res.status(404).json({ error: "No data found for the given slug." });
+    }
   } catch (error) {
-    console.error('데이터 처리 중 오류:', error);
-    res.status(500).send('서버 오류 발생');
+    console.error("Error serving cached data:", error);
+    res.status(500).json({ error: "Failed to serve cached data." });
+  }
+});
+
+/* ✅ Webhook 엔드포인트 (Google Sheets 변경 감지) */
+app.post('/update', async (req, res) => {
+  const { slug, action, secret } = req.body;
+
+  // Webhook 보안 검증 (비밀 키 확인)
+  const expectedSecret = process.env.WEBHOOK_SECRET;
+  if (secret !== expectedSecret) {
+    console.warn("Unauthorized Webhook attempt detected.");
+    return res.status(403).send("Unauthorized");
+  }
+
+  console.log(`Received webhook for slug: ${slug}, action: ${action}`);
+
+  try {
+    if (action === 'update') {
+      const data = await fetchGoogleSheetData();
+      saveCache(data);
+      console.log("Cache updated after Google Sheets edit.");
+      res.status(200).send("Cache updated successfully.");
+    } else {
+      res.status(400).send("Unsupported action.");
+    }
+  } catch (error) {
+    console.error("Error processing webhook:", error);
+    res.status(500).send("Failed to update cache.");
   }
 });
 
 /* ------------------- 서버 실행 ------------------- */
 app.listen(PORT, () => {
-  console.log("Server is running");
+  console.log(`Server is running on port ${PORT}`);
 });
