@@ -79,31 +79,21 @@ function loadCache() {
 /* ------------------- API 엔드포인트 ------------------- */
 
 /* ✅ 캐시된 Google Sheets 데이터 제공 (API key 보호) */
-app.get('/google-sheets/:slug', (req, res) => {
+app.get('/google-sheets/:slug', async (req, res) => {
   const slug = req.params.slug;
 
   try {
-    const cachedData = loadCache();
-
-    if (!cachedData) {
-      return res.status(404).json({ error: "No cached data available." });
-    }
-
-    const data = cachedData.data;
-
-    // 헤더 파싱 및 슬러그 필터링
+    const data = await fetchGoogleSheetData(); // Google Sheets API 호출
     const headers = data[0];
-    const slugIndex = headers.indexOf("Slug");
-    const nameIndex = headers.indexOf("Name");
-    const contentIndex = headers.indexOf("Content");
+    const slugIndex = headers.indexOf("slug");
 
     const matchedRow = data.find((row, index) => index !== 0 && row[slugIndex] === slug);
 
     if (matchedRow) {
       res.json({
-        slug: matchedRow[slugIndex],
-        name: matchedRow[nameIndex],
-        content: matchedRow[contentIndex],
+        range: "Sheet1!A1:E100",
+        majorDimension: "ROWS",
+        values: [headers, matchedRow]
       });
     } else {
       res.status(404).json({ error: "No data found for the given slug." });
