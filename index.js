@@ -14,14 +14,10 @@ app.use(bodyParser.json());
 
 /* ------------------- 기존 Python 실행 엔드포인트 유지 ------------------- */
 app.get('/run-python/:slug', (req, res) => {
+  const slug = req.params.slug;
 
-  const slug = req.params.slug
   // script.py 실행
   exec(`python script.py ${slug}`, (error, stdout, stderr) => {
-// 이유는 모르겠으나, python3이 아닌 python으로 해야 정상적으로 실행됨 
-// exec 호출 시 python script.py slug 형식으로 실행하도록 설정.
-// 형식을 이와 같이 설정함으로써, script.py에서 sys.argv[1]로 slug 값을 알 수 있음
-    
     if (error) {
       console.error(`Error: ${error.message}`);
       return res.status(500).json({ error: 'Python script execution error' });
@@ -41,7 +37,6 @@ app.get('/run-python/:slug', (req, res) => {
 // Google Sheets API 인증 설정
 const auth = new google.auth.GoogleAuth({
   keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, // 구글 API 인증 파일 경로
-  //livefornow2425@gmail.com 계정의 google cloud console에 세팅팅해둠
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 
@@ -115,17 +110,11 @@ app.get('/data', async (req, res) => {
       source = 'Cache';
     }
 
-    // 📌📌📌📌📌 간단한 분석 로직 (값 * 2 예시)
-    const analyzedData = data.map(row => ({
-      date: row[0],
-      content: row[1],
-      value: Number(row[2]),
-    }));
-
+    // 분석 로직 제거 후, 원본 데이터만 반환
     res.json({
       source,
       lastUpdated: cachedData ? cachedData.timestamp : moment().toISOString(),
-      analyzedData,
+      data,
     });
   } catch (error) {
     console.error('데이터 처리 중 오류:', error);
@@ -135,5 +124,5 @@ app.get('/data', async (req, res) => {
 
 /* ------------------- 서버 실행 ------------------- */
 app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  console.log("Server is running");
 });
