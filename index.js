@@ -43,13 +43,14 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 
 // Google Sheets 정보
-const spreadsheetId = '1cwsuVehsWlSwF-s-fv5MLqZv9hIl5IbLyzk3RROMDj4'; // 스프레드시트 ID
-const range = 'Sheet1!A1:C100'; // 데이터 범위
+const spreadsheetId = '1SqlqUq05SyMU3BC2BYYIT67fdW5M5vgq4y41bByR3iE'; // 스프레드시트 ID
+const range = 'data!A1:E100'; // 데이터 범위
 
 // 캐시 파일 경로
 const cacheFile = './sheets_cache.json';
 
 /* --- Google Sheets 데이터 가져오기 --- */
+// Google Sheets API를 호출하는 함수 //
 async function fetchGoogleSheetData() {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -77,7 +78,7 @@ function loadCache() {
 
 /* ------------------- API 엔드포인트 ------------------- */
 
-/* ✅ 캐시된 Google Sheets 데이터 제공 */
+/* ✅ 캐시된 Google Sheets 데이터 제공 (API key 보호) */
 app.get('/google-sheets/:slug', (req, res) => {
   const slug = req.params.slug;
 
