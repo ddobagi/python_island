@@ -181,6 +181,7 @@ app.get('/google-sheets/:slug', async (req, res) => {
     // 병렬 작업이 끝날 때까지 기다렸다가 그 결과를 data 변수에 저장
     // fetchGoogleSheetData(): 스프레드시트 내 데이터를 행과 열 그대로 저장 
     const headers = data[0];
+    const toggles = data[1];
     // 첫 번째 행은 헤더로 간주함 
     const slugIndex = headers.indexOf("slug");
     // 헤더로 slug가 적혀 있는 열의 열 번호를 slugIndex 변수에 저장 
@@ -197,7 +198,7 @@ app.get('/google-sheets/:slug', async (req, res) => {
       res.json({
         range: "Sheet1!A1:Z100",
         majorDimension: "ROWS",
-        values: [headers, matchedRow]
+        values: [headers, toggles, matchedRow]
         // 위와 같은 구조의 json 파일로 결과를 반환 
       });
     } else {
