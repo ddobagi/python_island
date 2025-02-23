@@ -154,6 +154,8 @@ app.get('/google-sheets/all', async (req, res) => {
       majorDimension: "ROWS",
       values: data
     });
+    // 🚨🚨 res에 어떤 데이터를 포함시키는지에 따라, 설정 기능 등을 넣을 수 있음! 
+    // 🚨🚨 1) header 2) 설정값 3) 페이지의 slug에 따라 필터링된 데이터 이렇게 구성하는 게 좋을 듯! 
   } catch (error) {
     console.error("Error fetching all Google Sheets data:", error);
     res.status(500).json({ error: "Failed to fetch all data." });
