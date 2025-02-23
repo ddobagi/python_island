@@ -145,6 +145,22 @@ function loadCache() {
 }
 
 /* ------------------- API 엔드포인트 ------------------- */
+/* ✅ 모든 Google Sheets 데이터 제공, 정적 라우트를 우선 실행 */
+app.get('/google-sheets/all', async (req, res) => {
+  try {
+    const data = await fetchGoogleSheetData();
+    res.json({
+      range: "Sheet1!A1:E100",
+      majorDimension: "ROWS",
+      values: data
+    });
+  } catch (error) {
+    console.error("Error fetching all Google Sheets data:", error);
+    res.status(500).json({ error: "Failed to fetch all data." });
+  }
+});
+
+
 
 /* ✅ 캐시된 Google Sheets 데이터 제공 (API key 보호) */
 app.get('/google-sheets/:slug', async (req, res) => {
@@ -189,21 +205,6 @@ app.get('/google-sheets/:slug', async (req, res) => {
     console.error("Error serving cached data:", error);
     res.status(500).json({ error: "Failed to serve cached data." });
     // try 블록 내에서 에러가 발생하면 catch (error) 구문을 통해 에러 핸들링 
-  }
-});
-
-/* ✅ 모든 Google Sheets 데이터 제공 */
-app.get('/google-sheets/all', async (req, res) => {
-  try {
-    const data = await fetchGoogleSheetData();
-    res.json({
-      range: "Sheet1!A1:E100",
-      majorDimension: "ROWS",
-      values: data
-    });
-  } catch (error) {
-    console.error("Error fetching all Google Sheets data:", error);
-    res.status(500).json({ error: "Failed to fetch all data." });
   }
 });
 
