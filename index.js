@@ -192,6 +192,22 @@ app.get('/google-sheets/:slug', async (req, res) => {
   }
 });
 
+/* ✅ 모든 Google Sheets 데이터 제공 */
+app.get('/google-sheets/all', async (req, res) => {
+  try {
+    const data = await fetchGoogleSheetData();
+    res.json({
+      range: "Sheet1!A1:E100",
+      majorDimension: "ROWS",
+      values: data
+    });
+  } catch (error) {
+    console.error("Error fetching all Google Sheets data:", error);
+    res.status(500).json({ error: "Failed to fetch all data." });
+  }
+});
+
+
 /* ✅ Webhook 엔드포인트 (Google Sheets 변경 감지) */
 app.post('/update', async (req, res) => {
 // 이번에는 post 요청을 처리하는 라우트
