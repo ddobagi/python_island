@@ -145,6 +145,22 @@ function loadCache() {
 }
 
 /* ------------------- API 엔드포인트 ------------------- */
+/* ✅ 모든 Google Sheets 데이터 제공, 🚨 정적 라우트를 우선 실행해야함🚨 */
+app.get('/google-sheets/all', async (req, res) => {
+  try {
+    const data = await fetchGoogleSheetData();
+    res.json({
+      range: "Sheet1!A1:E100",
+      majorDimension: "ROWS",
+      values: data
+    });
+  } catch (error) {
+    console.error("Error fetching all Google Sheets data:", error);
+    res.status(500).json({ error: "Failed to fetch all data." });
+  }
+});
+
+
 
 /* ✅ 캐시된 Google Sheets 데이터 제공 (API key 보호) */
 app.get('/google-sheets/:slug', async (req, res) => {
@@ -169,6 +185,9 @@ app.get('/google-sheets/:slug', async (req, res) => {
     const slugIndex = headers.indexOf("slug");
     // 헤더로 slug가 적혀 있는 열의 열 번호를 slugIndex 변수에 저장 
 
+    console.log("Data fetched from Google Sheets: ", data);
+    console.log("Slug Index: ", slugIndex);
+    
     const matchedRow = data.find((row, index) => index !== 0 && row[slugIndex] === slug);
     // 헤더는 제외한, slugIndex 열의 데이터 중 
     // 요청 경로의 slug 값과 같은 값을 가지는 cell을 찾고,
@@ -191,6 +210,7 @@ app.get('/google-sheets/:slug', async (req, res) => {
     // try 블록 내에서 에러가 발생하면 catch (error) 구문을 통해 에러 핸들링 
   }
 });
+
 
 /* ✅ Webhook 엔드포인트 (Google Sheets 변경 감지) */
 app.post('/update', async (req, res) => {

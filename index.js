@@ -82,7 +82,7 @@ const sheets = google.sheets({ version: 'v4', auth });
 
 // Google Sheets 정보
 const spreadsheetId = '1SqlqUq05SyMU3BC2BYYIT67fdW5M5vgq4y41bByR3iE'; // 스프레드시트 ID
-const range = 'data!A1:E100'; // 데이터 범위
+const range = 'data!A1:Z100'; // 데이터 범위
 
 const cacheFile = './sheets_cache.json';
 // 캐시 파일 경로를 설정
@@ -150,7 +150,7 @@ app.get('/google-sheets/all', async (req, res) => {
   try {
     const data = await fetchGoogleSheetData();
     res.json({
-      range: "Sheet1!A1:E100",
+      range: "Sheet1!A1:Z100",
       majorDimension: "ROWS",
       values: data
     });
@@ -195,7 +195,7 @@ app.get('/google-sheets/:slug', async (req, res) => {
     if (matchedRow) {
       // matchedRow 변수에 저장된 값이 있으면 
       res.json({
-        range: "Sheet1!A1:E100",
+        range: "Sheet1!A1:Z100",
         majorDimension: "ROWS",
         values: [headers, matchedRow]
         // 위와 같은 구조의 json 파일로 결과를 반환 
