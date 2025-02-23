@@ -145,7 +145,7 @@ function loadCache() {
 }
 
 /* ------------------- API 엔드포인트 ------------------- */
-/* ✅ 모든 Google Sheets 데이터 제공, 정적 라우트를 우선 실행 */
+/* ✅ 모든 Google Sheets 데이터 제공, 🚨 정적 라우트를 우선 실행해야함🚨 */
 app.get('/google-sheets/all', async (req, res) => {
   try {
     const data = await fetchGoogleSheetData();
@@ -185,6 +185,9 @@ app.get('/google-sheets/:slug', async (req, res) => {
     const slugIndex = headers.indexOf("slug");
     // 헤더로 slug가 적혀 있는 열의 열 번호를 slugIndex 변수에 저장 
 
+    console.log("Data fetched from Google Sheets: ", data);
+    console.log("Slug Index: ", slugIndex);
+    
     const matchedRow = data.find((row, index) => index !== 0 && row[slugIndex] === slug);
     // 헤더는 제외한, slugIndex 열의 데이터 중 
     // 요청 경로의 slug 값과 같은 값을 가지는 cell을 찾고,
