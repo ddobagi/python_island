@@ -36,20 +36,30 @@ async function fetchGoogleSheetData(spreadsheetId, range) {
 
 /* 📌📌📌--- Google Sheets 데이터 API 엔드포인트 (동적 요청 지원) --- 📌📌📌 */
 app.get('/google-sheets/:spreadsheetId/:slug', async (req, res) => {
-  const { spreadsheetId } = req.params;
+  const { spreadsheetId, slug } = req.params;
   const { range } = req.query; // URL 쿼리에서 range 값을 동적으로 받음
 
-  if (!spreadsheetId || !range) {
+  if (!spreadsheetId || !slug) {
     return res.status(400).json({ error: "Spreadsheet ID and range are required." });
   }
 
   try {
     const data = await fetchGoogleSheetData(spreadsheetId, range);
-    res.json({
-      range,
-      majorDimension: "ROWS",
-      values: data,
-    });
+    const headers = data[0];
+    const slugIndex = headers.indexOf("slug");
+
+    const matchedRow = data.find((row,index) => index > 0 && row[slugIndex] === slug);
+
+    if (!matchedRow) {
+      return res.status(404).json({error: "No matching data"});
+    }
+
+    const videoData = headers.reduce((acc, header, idx) => {
+      acc[header] = matchedRow[idx] || "";
+      return acc;
+    }, {});
+
+    res.json(videoData);
   } catch (error) {
     console.error("Error fetching Google Sheets data:", error);
     res.status(500).json({ error: "Failed to fetch data from Google Sheets." });
