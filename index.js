@@ -35,8 +35,8 @@ async function fetchGoogleSheetData(spreadsheetId, range) {
 }
 
 /* 📌📌📌--- Google Sheets 데이터 API 엔드포인트 (동적 요청 지원) --- 📌📌📌 */
-app.get('/google-sheets/:spreadsheetId', async (req, res) => {
-  const { spreadsheetId } = req.params;
+app.get('/google-sheets/:spreadsheetId/:slug', async (req, res) => {
+  const { spreadsheetId, slug } = req.params;
   const { range } = req.query; // URL 쿼리에서 range 값을 동적으로 받음
 
   if (!spreadsheetId || !range) {
@@ -45,11 +45,25 @@ app.get('/google-sheets/:spreadsheetId', async (req, res) => {
 
   try {
     const data = await fetchGoogleSheetData(spreadsheetId, range);
-    res.json({
-      range,
-      majorDimension: "ROWS",
-      values: data,
-    });
+    const headers = data[0]; 
+    const slugIndex = headers.indexOf("slug"); // 'slug' 열 찾기
+
+    if (slugIndex === -1) {
+      return res.status(400).json({ error: "No 'slug' column found in the sheet." });
+    }
+
+    const matchedRow = data.find((row, index) => index !== 0 && row[slugIndex] === slug);
+
+    if (matchedRow) {
+      res.json({
+        range,
+        majorDimension: "ROWS",
+        values: [headers, matchedRow],
+     });
+    } else {
+      res.status(404).json({error: "No data found for the given slug."});
+      
+    }
   } catch (error) {
     console.error("Error fetching Google Sheets data:", error);
     res.status(500).json({ error: "Failed to fetch data from Google Sheets." });
