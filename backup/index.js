@@ -82,7 +82,7 @@ const sheets = google.sheets({ version: 'v4', auth });
 
 // Google Sheets 정보
 const spreadsheetId = '1SqlqUq05SyMU3BC2BYYIT67fdW5M5vgq4y41bByR3iE'; // 스프레드시트 ID
-const range = 'data!A1:E100'; // 데이터 범위
+const range = 'data!A1:Z100'; // 데이터 범위
 
 const cacheFile = './sheets_cache.json';
 // 캐시 파일 경로를 설정
@@ -150,10 +150,12 @@ app.get('/google-sheets/all', async (req, res) => {
   try {
     const data = await fetchGoogleSheetData();
     res.json({
-      range: "Sheet1!A1:E100",
+      range: "Sheet1!A1:Z100",
       majorDimension: "ROWS",
       values: data
     });
+    // 🚨🚨 res에 어떤 데이터를 포함시키는지에 따라, 설정 기능 등을 넣을 수 있음! 
+    // 🚨🚨 1) header 2) 설정값 3) 페이지의 slug에 따라 필터링된 데이터 이렇게 구성하는 게 좋을 듯! 
   } catch (error) {
     console.error("Error fetching all Google Sheets data:", error);
     res.status(500).json({ error: "Failed to fetch all data." });
@@ -181,6 +183,7 @@ app.get('/google-sheets/:slug', async (req, res) => {
     // 병렬 작업이 끝날 때까지 기다렸다가 그 결과를 data 변수에 저장
     // fetchGoogleSheetData(): 스프레드시트 내 데이터를 행과 열 그대로 저장 
     const headers = data[0];
+    const toggles = data[1];
     // 첫 번째 행은 헤더로 간주함 
     const slugIndex = headers.indexOf("slug");
     // 헤더로 slug가 적혀 있는 열의 열 번호를 slugIndex 변수에 저장 
@@ -195,9 +198,9 @@ app.get('/google-sheets/:slug', async (req, res) => {
     if (matchedRow) {
       // matchedRow 변수에 저장된 값이 있으면 
       res.json({
-        range: "Sheet1!A1:E100",
+        range: "Sheet1!A1:Z100",
         majorDimension: "ROWS",
-        values: [headers, matchedRow]
+        values: [headers, toggles, matchedRow]
         // 위와 같은 구조의 json 파일로 결과를 반환 
       });
     } else {
