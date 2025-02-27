@@ -35,7 +35,7 @@ async function fetchGoogleSheetData(spreadsheetId, range) {
 }
 
 /* 📌📌📌--- Google Sheets 데이터 API 엔드포인트 (동적 요청 지원) --- 📌📌📌 */
-app.get('/google-sheets/:spreadsheetId', async (req, res) => {
+app.get('/google-sheets/:spreadsheetId/:slug', async (req, res) => {
   const { spreadsheetId } = req.params;
   const { range } = req.query; // URL 쿼리에서 range 값을 동적으로 받음
 
